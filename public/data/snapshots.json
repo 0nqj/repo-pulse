@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "automated": true,
+    "branchHead": "c7dde807cf102bef50cd03c908f5a0665a5ef034",
+    "collectedAt": "2026-07-29T14:03:22.402Z",
+    "defaultBranch": "main",
+    "forks": 0,
+    "language": "TypeScript",
+    "openItems": 0,
+    "repository": "0nqj/repo-pulse",
+    "sizeKb": 0,
+    "source": "github-api",
+    "stars": 0,
+    "subscribers": 0
+  }
+]
