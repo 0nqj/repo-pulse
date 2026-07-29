@@ -32,7 +32,12 @@ test("mantém dados e agenda explicitamente automatizados", async () => {
   assert.match(workflow, /timezone: "America\/Sao_Paulo"/);
   assert.match(workflow, /github-actions\[bot\]/);
   assert.match(workflow, /repository snapshot \[bot\]/);
+  assert.match(workflow, /actions\/checkout@v7/);
+  assert.match(workflow, /actions\/setup-node@v7/);
   assert.match(deployWorkflow, /workflow_run:/);
   assert.match(deployWorkflow, /workflows: \["Coletar métricas do repositório"\]/);
   assert.match(deployWorkflow, /workflow_run\.conclusion == 'success'/);
+  assert.match(deployWorkflow, /actions\/configure-pages@v6/);
+  assert.match(deployWorkflow, /actions\/upload-pages-artifact@v5/);
+  assert.match(deployWorkflow, /actions\/deploy-pages@v5/);
 });
