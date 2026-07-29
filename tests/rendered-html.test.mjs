@@ -10,14 +10,16 @@ test("exporta o painel transparente como HTML estático", async () => {
   assert.match(html, /Repo Pulse/);
   assert.match(html, /Métricas reais\. Automação transparente\./);
   assert.match(html, /github-actions\[bot\]/);
-  assert.match(html, /Aguardando coleta/);
+  assert.match(html, /monitoramento automático e transparente/);
+  assert.match(html, /Fonte: API do GitHub/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SkeletonPreview/);
 });
 
 test("mantém dados e agenda explicitamente automatizados", async () => {
-  const [rawData, workflow] = await Promise.all([
+  const [rawData, workflow, deployWorkflow] = await Promise.all([
     readFile(new URL("public/data/snapshots.json", root), "utf8"),
     readFile(new URL(".github/workflows/collect-metrics.yml", root), "utf8"),
+    readFile(new URL(".github/workflows/deploy-pages.yml", root), "utf8"),
   ]);
 
   const snapshots = JSON.parse(rawData);
@@ -30,4 +32,7 @@ test("mantém dados e agenda explicitamente automatizados", async () => {
   assert.match(workflow, /timezone: "America\/Sao_Paulo"/);
   assert.match(workflow, /github-actions\[bot\]/);
   assert.match(workflow, /repository snapshot \[bot\]/);
+  assert.match(deployWorkflow, /workflow_run:/);
+  assert.match(deployWorkflow, /workflows: \["Coletar métricas do repositório"\]/);
+  assert.match(deployWorkflow, /workflow_run\.conclusion == 'success'/);
 });

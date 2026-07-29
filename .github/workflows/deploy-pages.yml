@@ -10,6 +10,9 @@ on:
       - "package-lock.json"
       - "next.config.ts"
       - ".github/workflows/deploy-pages.yml"
+  workflow_run:
+    workflows: ["Coletar métricas do repositório"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -24,6 +27,7 @@ concurrency:
 jobs:
   build:
     name: Construir site estático
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Obter o repositório
