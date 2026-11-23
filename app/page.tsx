@@ -27,6 +27,8 @@ const repository =
 const repositoryUrl = repository.includes("/")
   ? `https://github.com/${repository}`
   : null;
+const commitAuthor = process.env.GITHUB_REPOSITORY_OWNER ??
+  (repositoryUrl ? repository.split("/")[0] : "O titular do repositório");
 
 const localDateFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone,
@@ -234,14 +236,13 @@ export default function Home() {
           <span className="section-index">POLÍTICA</span>
           <h2 id="transparency-title">O que cada commit significa</h2>
           <p>
-            Cada alteração automática adiciona uma observação datada à série
-            histórica. Não há commits vazios, autoria humana simulada ou mensagens
-            que escondam a automação.
+            O github-actions[bot] executa a coleta e registra um commit quando há
+            uma nova leitura.
           </p>
         </div>
         <ul>
           <li><span>01</span> Dados obtidos pela API oficial do GitHub</li>
-          <li><span>02</span> Autor identificado como github-actions[bot]</li>
+          <li><span>02</span> {commitAuthor} aparece como autor dos novos commits de coleta</li>
           <li><span>03</span> Mensagens encerradas com o marcador [bot]</li>
         </ul>
       </section>

@@ -47,6 +47,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/data/snapshots.json
           git commit \
+            --author="${GITHUB_REPOSITORY_OWNER} <${GITHUB_REPOSITORY_OWNER_ID}+${GITHUB_REPOSITORY_OWNER}@users.noreply.github.com>" \
             -m "chore(metrics): record ${local_time} repository snapshot [bot]" \
-            -m "Automated GitHub API telemetry collected on ${local_date}. Source and bot authorship are intentionally explicit."
+            -m "GitHub Actions collected these metrics from the GitHub API on ${local_date}."
           git push

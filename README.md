@@ -5,7 +5,7 @@ Painel público de telemetria para um repositório GitHub. O projeto registra oi
 ## Transparência por padrão
 
 - Cada commit automático adiciona uma leitura datada em `public/data/snapshots.json`.
-- A autoria aparece como `github-actions[bot]`.
+- Os novos commits de coleta têm o dono do repositório como autor. O GitHub Actions executa a coleta e registra o commit como `github-actions[bot]` (committer).
 - Toda mensagem automática termina com `[bot]`.
 - Não há commits vazios, alterações cosméticas aleatórias ou simulação de trabalho humano.
 - Os dados vêm diretamente da API do GitHub.
