@@ -15,17 +15,7 @@ export default function History({ rows }: { rows: HistoryRow[] }) {
   const start = page * pageSize;
   const visible = rows.slice(start, start + pageSize);
   return (
-    <section id="historico" className="panel history-panel" aria-labelledby="history-title" tabIndex={-1}>
-      <div className="panel-head">
-        <h2 id="history-title">
-          <Icon name="history" />
-          Histórico de leituras
-        </h2>
-        <a href="./data/snapshots.json" download="repo-pulse.json" className="quiet-button">
-          <Icon name="download" />
-          Baixar JSON
-        </a>
-      </div>
+    <section className="panel history-panel" aria-label="Leituras do repositório">
       {rows.length ? (
         <>
           <div

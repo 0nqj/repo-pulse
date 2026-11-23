@@ -46,6 +46,12 @@ html {
 }
 body {
   margin: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+main.shell {
+  flex: 1;
 }
 a {
   color: inherit;
@@ -547,11 +553,12 @@ dd svg {
 .repo-source svg:last-child {
   margin-left: auto;
 }
-.history-panel,
-.schedule-panel {
+.history-panel {
+  overflow: clip;
+}
+.schedule-panel + .schedule-panel {
   margin-top: 18px;
 }
-.history-panel .panel-head,
 .schedule-panel .panel-head {
   padding-bottom: 15px;
 }
@@ -670,6 +677,9 @@ th:last-child {
   font-size: 13px;
   padding-inline: 21px;
   line-height: 1.6;
+}
+.schedule-panel > p + .schedule-note {
+  margin-top: 16px;
 }
 .slots {
   margin: 15px 21px 18px;
@@ -908,8 +918,7 @@ footer svg {
   .repo-source {
     padding-inline: 15px;
   }
-  .history-panel,
-  .schedule-panel {
+  .schedule-panel + .schedule-panel {
     margin-top: 12px;
   }
   .history-foot,

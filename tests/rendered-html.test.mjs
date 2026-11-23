@@ -4,17 +4,46 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("exporta o painel transparente como HTML estático", async () => {
-  const html = await readFile(new URL("out/index.html", root), "utf8");
-
-  assert.match(html, /Repo Pulse/);
-  assert.match(html, /github-actions\[bot\]/);
-  assert.match(html, /Atividade de coleta/);
-  assert.match(html, /Histórico de leituras/);
-  assert.match(html, /Agenda de coleta/);
-  assert.match(html, /API do GitHub/);
-  assert.match(html, /<table\b/);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SkeletonPreview/);
+test("exporta três páginas com destinos e conteúdo próprios", async () => {
+  const [overview, history, automation] = await Promise.all(
+    ["", "historico/", "automacao/"].map((route) =>
+      readFile(new URL("out/" + route + "index.html", root), "utf8"),
+    ),
+  );
+  const pages = [overview, history, automation];
+  const links = ["Visão geral", "Histórico", "Automação"];
+  const prefix =
+    process.env.GITHUB_ACTIONS === "true" && process.env.GITHUB_REPOSITORY
+      ? process.env.GITHUB_REPOSITORY.split("/")[1]
+      : "";
+  const base = prefix && !prefix.endsWith(".github.io") ? "/" + prefix : "";
+  for (const [index, html] of pages.entries()) {
+    const nav = html.match(/<nav\b[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+    assert.ok(nav);
+    const anchors = [...nav.matchAll(/<a\b([^>]*)>([^<]*)<\/a>/g)];
+    assert.deepEqual(
+      anchors.map(([, attrs]) => attrs.match(/href="([^"]+)"/)?.[1]),
+      [base + "/", base + "/historico/", base + "/automacao/"],
+    );
+    assert.deepEqual(
+      anchors.filter(([, attrs]) => attrs.includes('aria-current="page"')).map(([, , label]) => label),
+      [links[index]],
+    );
+    assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SkeletonPreview/);
+  }
+  assert.match(overview, /Atividade de coleta/);
+  assert.match(overview, /API do GitHub/);
+  assert.doesNotMatch(overview, /<table\b|id="schedule-title"/);
+  assert.match(history, /<h1>Histórico de leituras<\/h1>/);
+  assert.match(history, /<table\b/);
+  assert.match(history, /Baixar JSON/);
+  assert.doesNotMatch(history, /id="chart-title"|id="schedule-title"/);
+  assert.match(automation, /<h1>Automação<\/h1>/);
+  assert.match(automation, /Agenda de coleta/);
+  assert.match(automation, /github-actions\[bot\]/);
+  assert.match(automation, /workflows\/collect-metrics\.yml/);
+  assert.match(automation, /workflows\/archive-month\.yml/);
+  assert.doesNotMatch(automation, /<table\b|id="chart-title"/);
 });
 
 test("mantém dados e agenda explicitamente automatizados", async () => {
