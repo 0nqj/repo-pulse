@@ -1,0 +1,30 @@
+name: Atualizar branch mensal
+
+on:
+  schedule:
+    - cron: "17 22 * * *"
+      timezone: "America/Sao_Paulo"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-pulse-arquivo-mensal
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: github.ref == 'refs/heads/main'
+    name: Registrar estado diário da main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter a main e as branches mensais
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Atualizar o arquivo do mês
+        shell: bash
+        run: bash scripts/archive-month.sh "$(TZ=America/Sao_Paulo date +%F)"

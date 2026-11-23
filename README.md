@@ -4,7 +4,7 @@ Painel público de telemetria para um repositório GitHub. O projeto registra oi
 
 ## Transparência por padrão
 
-- Cada commit automático adiciona uma leitura datada em `public/data/snapshots.json`.
+- Cada commit automático de coleta adiciona uma leitura datada em `public/data/snapshots.json`.
 - Os novos commits de coleta têm o dono do repositório como autor. O GitHub Actions executa a coleta e registra o commit como `github-actions[bot]` (committer).
 - Toda mensagem automática termina com `[bot]`.
 - Não há commits vazios, alterações cosméticas aleatórias ou simulação de trabalho humano.
@@ -39,6 +39,12 @@ npm test
 ## Automação
 
 O workflow usa um agendamento com o fuso IANA `America/Sao_Paulo`, executando às 14:07, 15:07, 16:07, 17:07, 18:07, 19:07, 20:07 e 21:07. O minuto 07 reduz a chance de atrasos comuns no início exato da hora.
+
+### Arquivo mensal
+
+Todos os dias às **22h17 de São Paulo**, o workflow [Atualizar branch mensal](.github/workflows/archive-month.yml) incorpora o estado da `main` à branch `mensal/AAAA-MM`. A primeira execução do mês cria a branch. A cada dia, um commit registra a data local e o SHA arquivado em `.repo-pulse/arquivo-diario`. Repetir a execução no mesmo dia preserva o primeiro registro.
+
+O dono do repositório aparece como autor e `github-actions[bot]` como committer. Na virada do mês, o workflow abre outra branch a partir da `main`. As branches dos meses anteriores ficam disponíveis para consulta.
 
 ## Licença
 
