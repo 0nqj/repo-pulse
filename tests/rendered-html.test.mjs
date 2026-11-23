@@ -8,10 +8,12 @@ test("exporta o painel transparente como HTML estático", async () => {
   const html = await readFile(new URL("out/index.html", root), "utf8");
 
   assert.match(html, /Repo Pulse/);
-  assert.match(html, /Métricas reais\. Automação transparente\./);
   assert.match(html, /github-actions\[bot\]/);
-  assert.match(html, /monitoramento automático e transparente/);
-  assert.match(html, /Fonte: API do GitHub/);
+  assert.match(html, /Atividade de coleta/);
+  assert.match(html, /Histórico de leituras/);
+  assert.match(html, /Agenda de coleta/);
+  assert.match(html, /API do GitHub/);
+  assert.match(html, /<table\b/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SkeletonPreview/);
 });
 

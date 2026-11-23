@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Repo Pulse — métricas reais do repositório",
   description:
     "Painel público de telemetria do repositório, atualizado por uma automação transparente.",
+  icons: { icon: `${basePath}/icon.svg` },
   openGraph: {
     title: "Repo Pulse",
     description: "Métricas reais. Automação transparente.",

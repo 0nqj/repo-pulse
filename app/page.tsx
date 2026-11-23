@@ -1,257 +1,254 @@
 import snapshotsData from "../public/data/snapshots.json";
+import Activity from "./activity";
+import History from "./history";
+import Icon from "./icons";
+import Nav from "./nav";
+import {
+  dailyCounts,
+  dayKey,
+  formatDay,
+  localDate,
+  localTime,
+  number,
+  type Snapshot,
+} from "./telemetry";
 
-type Snapshot = {
-  automated: true;
-  branchHead: string;
-  collectedAt: string;
-  defaultBranch: string;
-  forks: number;
-  language: string | null;
-  openItems: number;
-  repository: string;
-  sizeKb: number;
-  source: "github-api";
-  stars: number;
-  subscribers: number;
-};
-
-const timeZone = "America/Sao_Paulo";
-const expectedHours = [14, 15, 16, 17, 18, 19, 20, 21];
-const snapshots = [...(snapshotsData as Snapshot[])].sort((a, b) =>
+const readings = [...(snapshotsData as Snapshot[])].sort((a, b) =>
   a.collectedAt.localeCompare(b.collectedAt),
 );
-const latest = snapshots.at(-1);
-const previous = snapshots.at(-2);
-const repository =
-  latest?.repository ?? process.env.GITHUB_REPOSITORY ?? "repo-pulse";
-const repositoryUrl = repository.includes("/")
-  ? `https://github.com/${repository}`
-  : null;
-const commitAuthor = process.env.GITHUB_REPOSITORY_OWNER ??
-  (repositoryUrl ? repository.split("/")[0] : "O titular do repositório");
+const latest = readings.at(-1);
+const previous = readings.at(-2);
+const repository = process.env.GITHUB_REPOSITORY ?? latest?.repository ?? "";
+const [owner, name] = repository.split("/");
+const repoUrl = owner && name ? "https://github.com/" + repository : null;
+const updated = latest ? new Date(latest.collectedAt) : null;
+const referenceDay = dayKey(latest?.collectedAt ?? new Date().toISOString());
+const days = dailyCounts(readings, referenceDay);
+const latestDay = readings.filter((reading) => dayKey(reading.collectedAt) === referenceDay);
+const hours = Array.from({ length: 8 }, (_, i) => i + 14);
+const history = [...readings]
+  .reverse()
+  .map(({ collectedAt, branchHead, defaultBranch, repository, sizeKb }) => ({
+    collectedAt,
+    branchHead,
+    defaultBranch,
+    repository,
+    sizeKb,
+  }));
 
-const localDateFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-function localDate(value: string) {
-  return localDateFormatter.format(new Date(value));
+function change(current?: number, prior?: number, unit = "") {
+  if (current === undefined || prior === undefined) return "Sem comparação";
+  const delta = current - prior;
+  return delta === 0
+    ? "Sem variação"
+    : `${delta > 0 ? "+" : ""}${number(delta)}${unit} na última coleta`;
 }
-
-function localHour(value: string) {
-  return Number(
-    new Intl.DateTimeFormat("pt-BR", {
-      timeZone,
-      hour: "2-digit",
-      hour12: false,
-    }).format(new Date(value)),
-  );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone,
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatNumber(value: number | undefined) {
-  return value === undefined ? "—" : new Intl.NumberFormat("pt-BR").format(value);
-}
-
-function delta(current: number | undefined, before: number | undefined) {
-  if (current === undefined || before === undefined) return null;
-  return current - before;
-}
-
-const referenceDay = latest ? localDate(latest.collectedAt) : localDate(new Date().toISOString());
-const daySnapshots = snapshots.filter(
-  (snapshot) => localDate(snapshot.collectedAt) === referenceDay,
-);
-const recentSnapshots = snapshots.slice(-10).reverse();
 
 const metrics = [
   {
+    label: "Leituras registradas",
+    icon: "database",
+    value: number(readings.length),
+    detail: readings[0] ? "Desde " + formatDay(dayKey(readings[0].collectedAt)) : "Histórico vazio",
+  },
+  {
+    label: "Tamanho",
+    icon: "drive",
+    value: latest ? number(latest.sizeKb) : "—",
+    unit: "KB",
+    detail: change(latest?.sizeKb, previous?.sizeKb, " KB"),
+  },
+  {
     label: "Estrelas",
-    value: latest?.stars,
-    change: delta(latest?.stars, previous?.stars),
+    icon: "star",
+    value: latest ? number(latest.stars) : "—",
+    detail: change(latest?.stars, previous?.stars),
   },
   {
     label: "Forks",
-    value: latest?.forks,
-    change: delta(latest?.forks, previous?.forks),
-  },
-  {
-    label: "Itens abertos",
-    value: latest?.openItems,
-    change: delta(latest?.openItems, previous?.openItems),
-  },
-  {
-    label: "Observadores",
-    value: latest?.subscribers,
-    change: delta(latest?.subscribers, previous?.subscribers),
+    icon: "fork",
+    value: latest ? number(latest.forks) : "—",
+    detail: change(latest?.forks, previous?.forks),
   },
 ];
 
 export default function Home() {
   return (
-    <main>
-      <header className="site-header shell">
-        <div className="brand" aria-label="Repo Pulse">
-          <span className="brand-mark" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span>repo pulse</span>
-        </div>
-        {repositoryUrl ? (
-          <a className="repository-link" href={repositoryUrl}>
-            Ver repositório <span aria-hidden="true">↗</span>
+    <>
+      <a className="skip-link" href="#visao-geral">
+        Pular para o painel
+      </a>
+      <header className="topbar">
+        <div className="shell header-inner">
+          <a href="#visao-geral" className="brand" aria-label="Repo Pulse, início">
+            <span className="brand-mark">
+              <Icon name="pulse" size={23} />
+            </span>
+            Repo Pulse
           </a>
-        ) : (
-          <span className="repository-pending">Vínculo após a publicação</span>
-        )}
-      </header>
-
-      <section className="hero shell">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <span className="live-dot" aria-hidden="true" />
-            monitoramento automático e transparente
-          </div>
-          <h1>
-            Pulso do repositório,
-            <span> sem ruído.</span>
-          </h1>
-          <p>
-            Oito fotografias diárias da atividade real deste projeto, coletadas
-            entre 14h e 21h no horário de São Paulo.
-          </p>
-        </div>
-
-        <div className="hero-status">
-          <span className="status-label">Última leitura</span>
-          <strong>{latest ? formatDate(latest.collectedAt) : "Aguardando coleta"}</strong>
-          <span className="status-repository">{repository}</span>
-          <div className="pulse-track" aria-hidden="true">
-            <span />
-          </div>
-        </div>
-      </section>
-
-      <section className="metrics shell" aria-labelledby="metrics-title">
-        <div className="section-heading">
-          <div>
-            <span className="section-index">01</span>
-            <h2 id="metrics-title">Estado atual</h2>
-          </div>
-          <span>Fonte: API do GitHub</span>
-        </div>
-
-        <div className="metric-grid">
-          {metrics.map((metric) => (
-            <article className="metric-card" key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{formatNumber(metric.value)}</strong>
-              <small className={metric.change && metric.change !== 0 ? "changed" : "stable"}>
-                {metric.change === null
-                  ? "sem histórico"
-                  : metric.change === 0
-                    ? "sem mudança"
-                    : `${metric.change > 0 ? "+" : ""}${metric.change} desde a última leitura`}
-              </small>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="activity shell" aria-labelledby="activity-title">
-        <div className="section-heading">
-          <div>
-            <span className="section-index">02</span>
-            <h2 id="activity-title">Janela diária</h2>
-          </div>
-          <span>{referenceDay.split("-").reverse().join("/")}</span>
-        </div>
-
-        <div className="schedule-grid">
-          {expectedHours.map((hour) => {
-            const reading = daySnapshots.find(
-              (snapshot) => localHour(snapshot.collectedAt) === hour,
-            );
-            return (
-              <div className={`schedule-slot ${reading ? "complete" : "pending"}`} key={hour}>
-                <span>{String(hour).padStart(2, "0")}:00</span>
-                <i aria-hidden="true" />
-                <small>{reading ? "coletado" : "aguardando"}</small>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="history shell" aria-labelledby="history-title">
-        <div className="section-heading">
-          <div>
-            <span className="section-index">03</span>
-            <h2 id="history-title">Leituras recentes</h2>
-          </div>
-          <span>{snapshots.length} registros preservados</span>
-        </div>
-
-        <div className="history-table" role="region" aria-label="Histórico de leituras" tabIndex={0}>
-          <div className="history-row history-head">
-            <span>Coletado em</span>
-            <span>Branch</span>
-            <span>SHA observado</span>
-            <span>Tamanho</span>
-            <span>Origem</span>
-          </div>
-          {recentSnapshots.length ? (
-            recentSnapshots.map((snapshot) => (
-              <div className="history-row" key={snapshot.collectedAt}>
-                <span>{formatDate(snapshot.collectedAt)}</span>
-                <span>{snapshot.defaultBranch}</span>
-                <span className="mono">{snapshot.branchHead.slice(0, 7)}</span>
-                <span>{formatNumber(snapshot.sizeKb)} KB</span>
-                <span className="source-tag">automação [bot]</span>
-              </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <span>00</span>
-              <p>A primeira leitura aparecerá após a automação ser executada.</p>
-            </div>
+          <Nav />
+          {repoUrl && (
+            <a className="github-button" href={repoUrl}>
+              <Icon name="github" size={15} />
+              GitHub
+              <Icon name="arrow" size={12} />
+            </a>
           )}
         </div>
-      </section>
-
-      <section className="transparency shell" aria-labelledby="transparency-title">
-        <div>
-          <span className="section-index">POLÍTICA</span>
-          <h2 id="transparency-title">O que cada commit significa</h2>
-          <p>
-            O github-actions[bot] executa a coleta e registra um commit quando há
-            uma nova leitura.
-          </p>
+      </header>
+      <main className="shell" id="visao-geral">
+        <div className="overview">
+          <div>
+            <h1>Visão geral</h1>
+            <div className="repo-path">
+              <Icon name="book" size={15} />
+              {repoUrl ? (
+                <a href={repoUrl}>
+                  {owner}
+                  <span className="slash">/</span>
+                  <strong>{name}</strong>
+                </a>
+              ) : (
+                "Repositório pendente"
+              )}
+              {latest && (
+                <span className="branch-tag">
+                  <Icon name="branch" size={12} />
+                  {latest.defaultBranch}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="latest">
+            <span>
+              <i />
+              Última coleta
+            </span>
+            {updated && latest ? (
+              <time dateTime={latest.collectedAt}>
+                {localDate.format(updated).replaceAll(" de ", " ")}
+                <b>·</b>
+                {localTime.format(updated)} BRT
+              </time>
+            ) : (
+              <span>Aguardando coleta</span>
+            )}
+          </div>
         </div>
-        <ul>
-          <li><span>01</span> Dados obtidos pela API oficial do GitHub</li>
-          <li><span>02</span> {commitAuthor} aparece como autor dos novos commits de coleta</li>
-          <li><span>03</span> Mensagens encerradas com o marcador [bot]</li>
-        </ul>
-      </section>
-
+        <section className="metric-band" aria-label="Métricas atuais">
+          {metrics.map((metric) => (
+            <article key={metric.label}>
+              <h2>
+                <Icon name={metric.icon} />
+                {metric.label}
+              </h2>
+              <div className="metric-value">
+                {metric.value}
+                {metric.unit && <small>{metric.unit}</small>}
+              </div>
+              <p>{metric.detail}</p>
+            </article>
+          ))}
+        </section>
+        <div className="analysis-grid">
+          <Activity days={days} hasData={Boolean(latest)} />
+          <aside className="panel repo-panel" aria-labelledby="repo-title">
+            <div className="panel-head">
+              <h2 id="repo-title">
+                <Icon name="book" />
+                Repositório
+              </h2>
+            </div>
+            <dl>
+              <div>
+                <dt>Autor das coletas</dt>
+                <dd>
+                  {owner && name ? (
+                    <a className="identity" href={"https://github.com/" + owner}>
+                      @{owner}
+                      <Icon name="arrow" size={12} />
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Branch padrão</dt>
+                <dd>
+                  <Icon name="branch" size={13} />
+                  {latest?.defaultBranch ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>Linguagem</dt>
+                <dd>
+                  {latest?.language === "TypeScript" && <i className="language-dot" />}
+                  {latest?.language ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>Itens abertos</dt>
+                <dd>{latest ? number(latest.openItems) : "—"}</dd>
+              </div>
+              <div>
+                <dt>Observadores</dt>
+                <dd>{latest ? number(latest.subscribers) : "—"}</dd>
+              </div>
+            </dl>
+            {repoUrl && (
+              <a className="repo-source" href={`https://api.github.com/repos/${repository}`}>
+                <Icon name="database" size={13} />
+                API do GitHub
+                <Icon name="arrow" size={12} />
+              </a>
+            )}
+          </aside>
+        </div>
+        <History rows={history} />
+        <section id="automacao" className="panel schedule-panel" aria-labelledby="schedule-title">
+          <div className="panel-head">
+            <h2 id="schedule-title">
+              <Icon name="calendar" />
+              Agenda de coleta
+            </h2>
+            <span className="schedule-date">{formatDay(referenceDay)} · BRT</span>
+          </div>
+          <p>Coletas agendadas a cada hora, das 14h07 às 21h07, no horário de São Paulo.</p>
+          <div className="slots">
+            {hours.map((hour) => {
+              const reading = latestDay.find(
+                (row) => Number(localTime.format(new Date(row.collectedAt)).slice(0, 2)) === hour,
+              );
+              return (
+                <div key={hour}>
+                  <strong>{hour}:07</strong>
+                  <span className={reading ? "done" : ""}>
+                    <i />
+                    {reading ? "Registrada" : "Sem leitura"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="schedule-note">
+            <Icon name="bot" size={15} />
+            <span>O github-actions[bot] registra as coletas com a marca [bot].</span>
+            {repoUrl && (
+              <a href={repoUrl + "/actions/workflows/collect-metrics.yml"}>
+                Ver execuções <Icon name="arrow" size={12} />
+              </a>
+            )}
+          </div>
+        </section>
+      </main>
       <footer className="shell">
-        <span>Repo Pulse</span>
-        <p>Métricas reais. Automação transparente.</p>
-        <span>{new Date().getUTCFullYear()}</span>
+        <span>
+          <Icon name="pulse" size={16} />
+          Repo Pulse
+        </span>
+        <span>Horários de São Paulo · UTC−03</span>
       </footer>
-    </main>
+    </>
   );
 }
